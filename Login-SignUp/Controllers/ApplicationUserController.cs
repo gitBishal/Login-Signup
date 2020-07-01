@@ -45,8 +45,7 @@ namespace Login_SignUp
         public async Task<IActionResult> Register(RegistrationModel model)
         {
             //register functionality
-            model.Email = "poudelbisal007@outlook.com";
-            model.Password = "12345666";
+            
 
             var user = new ApplicationUser
             {
@@ -89,8 +88,7 @@ namespace Login_SignUp
         //POST : /api/ApplicationUser/Login
         public async Task<IActionResult> Login(RegistrationModel model)
         {
-            model.Email = "poudelbisal007@outlook.com";
-            model.Password = "123455666";
+           
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
             {
