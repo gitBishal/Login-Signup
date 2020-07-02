@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Login_SignUp.Models;
 using Login_SignUp.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -23,9 +24,11 @@ namespace Login_SignUp
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IEmailSenderService _emailService;
         private readonly ApplicationSettings _appSettings;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
         public ApplicationUserController(UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
+            RoleManager<IdentityRole> roleManager,
             IEmailSenderService emailService,
             IOptions<ApplicationSettings> appSettings)
         {
@@ -33,8 +36,10 @@ namespace Login_SignUp
             _signInManager = signInManager;
             _emailService = emailService;
             _appSettings = appSettings.Value;
+            _roleManager = roleManager;
         }
-        
+
+        [Authorize(Roles="Basic")]
         [HttpGet,Route("registertest")]
         public IEnumerable<string> Register()
         {
@@ -55,9 +60,12 @@ namespace Login_SignUp
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
+            
 
             if (result.Succeeded)
             {
+                //Give basic role to the user 
+                await _userManager.AddToRoleAsync(user, "Basic");
                 //generation of the email token
                 var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var link = Url.Action(nameof(VerifyEmail), "ApplicationUser", new { userId = user.Id, code }, Request.Scheme, Request.Host.ToString());
@@ -90,24 +98,33 @@ namespace Login_SignUp
         //POST : /api/ApplicationUser/Login
         public async Task<IActionResult> Login(RegistrationModel model)
         {
-           
+            
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
             {
                 //Get role assigned to the user
-                var role = await _userManager.GetRolesAsync(user);
-                IdentityOptions _options = new IdentityOptions();
+                var roles = await _userManager.GetRolesAsync(user);
+                
+               // IdentityOptions _options = new IdentityOptions();
+                var claims = new List<Claim>
+                {
+                      new Claim("UserID",user.Id.ToString()),
+                      new Claim("UserName",user.UserName.ToString())
+
+                };
+                foreach (var role in roles)
+                {
+                    claims.Add(new Claim(ClaimTypes.Role, role));
+                }
 
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
-                    Subject = new ClaimsIdentity(new Claim[]
-                    {
-                        new Claim("UserID",user.Id.ToString()),
-                     //   new Claim(_options.ClaimsIdentity.RoleClaimType,role.FirstOrDefault())
-                    }),
+                    Subject = new ClaimsIdentity(claims
+                    ),
                     Expires = DateTime.UtcNow.AddDays(1),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_appSettings.JWT_Secret)), SecurityAlgorithms.HmacSha256Signature)
                 };
+
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var securityToken = tokenHandler.CreateToken(tokenDescriptor);
                 var token = tokenHandler.WriteToken(securityToken);

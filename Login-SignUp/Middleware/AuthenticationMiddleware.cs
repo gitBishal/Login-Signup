@@ -12,7 +12,7 @@ namespace Login_SignUp.Middleware
         public static IServiceCollection AddTokenAuthentication(this IServiceCollection services, IConfiguration config)
         {
            // var secret = config.GetSection("JwtConfig").GetSection("secret").Value;
-            var key = System.Text.Encoding.UTF8.GetBytes(config["ApplicationSettings:JWT_Secret"].ToString());
+            var key = Encoding.UTF8.GetBytes(config["ApplicationSettings:JWT_Secret"].ToString());
 
 
            // var key = Encoding.ASCII.GetBytes(secret);
