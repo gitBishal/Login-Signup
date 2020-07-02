@@ -60,14 +60,16 @@ namespace Login_SignUp
             {
                 //generation of the email token
                 var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                var link = $"{_appSettings.Host_Url}applicationuser/email-verification/userId={user.Id}/code={code}";
+                var link = Url.Action(nameof(VerifyEmail), "ApplicationUser", new { userId = user.Id, code }, Request.Scheme, Request.Host.ToString());
+
+               // var link = $"{_appSettings.Host_Url}applicationuser/email-verification/userId={user.Id}/code={code}";
                 _emailService.SendEmailVerification(link, model.Email);
                 return Ok(new { msg = "Verfication email has been sent" });
             }
             return BadRequest(new { error = "Please try again later" });
         }
 
-        [HttpGet, Route("email-verification/{userId}/{code}")]
+        [HttpGet]
         public async Task<IActionResult> VerifyEmail(string userId, string code)
         {
             var user = await _userManager.FindByIdAsync(userId);

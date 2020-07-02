@@ -24,7 +24,7 @@ namespace Login_SignUp.Services.Interfaces
             {
                 From = new MailAddress(_emailSettings.FromMailAddress),
                 Subject = "Request For Email Verification",
-                Body = $"Please reset your password by clicking here: " +
+                Body = $"Please verify your email by clicking here: " +
                              $"<a href='{link}'>link</a>",
                 IsBodyHtml = true
             };
