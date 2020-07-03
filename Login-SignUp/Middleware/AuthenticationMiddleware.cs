@@ -15,7 +15,20 @@ namespace Login_SignUp.Middleware
             var key = Encoding.UTF8.GetBytes(config["ApplicationSettings:JWT_Secret"].ToString());
 
 
-           // var key = Encoding.ASCII.GetBytes(secret);
+            // var key = Encoding.ASCII.GetBytes(secret);
+            var tokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                RequireExpirationTime = false,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
+            };
+
+            services.AddSingleton(tokenValidationParameters);
+
             services.AddAuthentication(x =>
             {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -27,15 +40,9 @@ namespace Login_SignUp.Middleware
             {
                 x.RequireHttpsMetadata = false;
                 x.SaveToken = false;
-                x.TokenValidationParameters = new TokenValidationParameters
-                {
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero,
-                    ValidateIssuerSigningKey = true
-                    
-                };
+                x.TokenValidationParameters = tokenValidationParameters;
+
+
             });
 
             return services;
