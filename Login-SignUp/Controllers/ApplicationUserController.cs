@@ -54,6 +54,7 @@ namespace Login_SignUp
             return new string[] { "value3", "value4" };
         }
 
+        [Authorize(Policy = "Permissions.Departments.View", AuthenticationSchemes = "Bearer")]
         [HttpPost, Route("register")]
         public async Task<IActionResult> Register([FromBody]RegistrationModel model)
         {
@@ -108,12 +109,12 @@ namespace Login_SignUp
             if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
             {
                 //Remove all the refresh token previously issue for this user
-                var responseTokensIssuedForThisUser = await _context.RefreshTokens.Where(x => x.UserId == user.Id).ToListAsync();
-                if (responseTokensIssuedForThisUser != null || responseTokensIssuedForThisUser.Count > 0)
-                {
-                    _context.RefreshTokens.RemoveRange(responseTokensIssuedForThisUser);
-                    await _context.SaveChangesAsync();
-                }
+                //var responseTokensIssuedForThisUser = await _context.RefreshTokens.Where(x => x.UserId == user.Id).ToListAsync();
+                //if (responseTokensIssuedForThisUser != null || responseTokensIssuedForThisUser.Count > 0)
+                //{
+                //    _context.RefreshTokens.RemoveRange(responseTokensIssuedForThisUser);
+                //    await _context.SaveChangesAsync();
+                //}
                 return await GenerateTokenForThisUser(user);
             }
             return BadRequest(new { Error = "Username or password invalid" });
@@ -144,7 +145,8 @@ namespace Login_SignUp
 
             var user = await _userManager.FindByIdAsync(validatedToken.Claims.Single(x => x.Type == "UserID").Value);
 
-            var storedRefreshToken = await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == request.RefreshToken && x.UserId == user.Id);
+            var storedRefreshToken = new RefreshToken();
+            //await _context.RefreshTokens.SingleOrDefaultAsync(x => x.Token == request.RefreshToken && x.UserId == user.Id);
 
             if (storedRefreshToken == null)
             {
@@ -167,7 +169,7 @@ namespace Login_SignUp
             }
 
             storedRefreshToken.Used = true;
-            _context.RefreshTokens.Update(storedRefreshToken);
+           // _context.RefreshTokens.Update(storedRefreshToken);
             await _context.SaveChangesAsync();
 
             return await GenerateTokenForThisUser(user,true);
@@ -208,6 +210,18 @@ namespace Login_SignUp
             {
                 var roles = await _userManager.GetRolesAsync(user);
 
+                //foreach (var roleToGetClaims in roles)
+                //{
+                //    var role = _roleManager.FindByNameAsync(roleToGetClaims);
+
+                //}
+                //var claimsWithRoles = await _roleManager.GetClaimsAsync(new IdentityRole {
+                //    Name = "SuperAdmin",
+                //    NormalizedName = "SUPERADMIN",
+                //    ConcurrencyStamp = "92959a1d-9cc3-4dfe-98cc-9cc3923d8866",
+                //    Id = "ef7c0bb6-f546-4a80-adab-230fcaefd683"
+
+                //   });
                 // IdentityOptions _options = new IdentityOptions();
                 var claims = new List<Claim>
                 {
@@ -217,13 +231,23 @@ namespace Login_SignUp
                 foreach (var role in roles)
                 {
                     claims.Add(new Claim(ClaimTypes.Role, role));
+                    var roleToGetClaims = await _roleManager.FindByNameAsync(role);
+                    var claimsOfThisRole = await _roleManager.GetClaimsAsync(roleToGetClaims);
+                    claims.AddRange(claimsOfThisRole);  
+
+
                 }
+                //foreach (var item in claimsWithRoles)
+                //{
+                //    claims.Add(item);
+                //}
+              
 
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(claims
                     ),
-                    Expires = isRefreshToken ? DateTime.UtcNow.AddDays(1) : DateTime.UtcNow.AddSeconds(2),
+                    Expires = isRefreshToken ? DateTime.UtcNow.AddDays(1) : DateTime.UtcNow.AddDays(2),
                     SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_appSettings.JWT_Secret)), SecurityAlgorithms.HmacSha256Signature)
                 };
 
@@ -240,7 +264,7 @@ namespace Login_SignUp
                     ExpiryDate = DateTime.UtcNow.AddMonths(6)
                 };
 
-                await _context.RefreshTokens.AddAsync(refreshToken);
+             //   await _context.RefreshTokens.AddAsync(refreshToken);
                 await _context.SaveChangesAsync();
 
                 return Ok(new
@@ -254,6 +278,30 @@ namespace Login_SignUp
                 return null;
             }
 
+        }
+
+        [Authorize(Policy  = "Permissions.Products.View", AuthenticationSchemes = "Bearer")]
+        [HttpPost]
+        [Route("LoginWithPermission")]
+        //POST : /api/ApplicationUser/Login
+      
+        public async Task<IActionResult> LoginWithPermission([FromBody] RegistrationModel model)
+        {
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
+            {
+                //Remove all the refresh token previously issue for this user
+                //var responseTokensIssuedForThisUser = await _context.RefreshTokens.Where(x => x.UserId == user.Id).ToListAsync();
+                //if (responseTokensIssuedForThisUser != null || responseTokensIssuedForThisUser.Count > 0)
+                //{
+                //    _context.RefreshTokens.RemoveRange(responseTokensIssuedForThisUser);
+                //    await _context.SaveChangesAsync();
+                //}
+                return await GenerateTokenForThisUser(user);
+            }
+            return BadRequest(new { Error = "Username or password invalid" });
+
+            //Get role assigned to the user
         }
     }
 }

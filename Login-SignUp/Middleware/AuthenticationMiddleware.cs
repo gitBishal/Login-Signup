@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System;
+using Login_SignUp.Constants;
 
 namespace Login_SignUp.Middleware
 {
@@ -36,6 +37,7 @@ namespace Login_SignUp.Middleware
                 x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 
             })
+
             .AddJwtBearer(x =>
             {
                 x.RequireHttpsMetadata = false;
@@ -43,6 +45,24 @@ namespace Login_SignUp.Middleware
                 x.TokenValidationParameters = tokenValidationParameters;
 
 
+            });
+
+            services.AddAuthorization(options =>
+            {
+                foreach (var item in Permissions.GetAllModuleNames())
+                {
+                    var allClaimsOfThisModule = Permissions.GeneratePermissionsForModule(item);
+
+                    foreach (var claim in allClaimsOfThisModule)
+                    {
+                        options.AddPolicy(claim, policy =>
+                       policy.RequireClaim("Permission", claim));
+
+                    }
+
+                }
+               
+               
             });
 
             return services;

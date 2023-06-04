@@ -1,4 +1,6 @@
 using Login_SignUp.Middleware;
+using Login_SignUp.Permission;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -19,11 +21,16 @@ namespace Login_SignUp
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-           
-            services.AddControllers();
-            services.AddBusiness(Configuration);
+             services.AddTokenAuthentication(Configuration);
+            services.AddAuthorization();
+           // services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+           // services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
             services.AddDatabaseConnection(Configuration);
-            services.AddTokenAuthentication(Configuration);
+            services.AddBusiness(Configuration);
+
+            services.AddControllers();
+           
+      
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

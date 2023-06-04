@@ -15,7 +15,7 @@ namespace Login_SignUp.Models
         }
 
          public DbSet<ApplicationUser> ApplicationUsers { get; set; }
-         public DbSet<RefreshToken> RefreshTokens { get; set; }
+       //  public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     }
 }
